@@ -5,18 +5,33 @@
  */
 package etu1889.framework.servlet;
 
+import etu1889.framework.*;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.HashMap;
 
+// import javax.servlet.ServletException;
+// import javax.servlet.http.HttpServlet;
+// import javax.servlet.http.HttpServletRequest;
+// import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.HashMap;
 /**
  *
  * @author steve
  */
 public class FrontServlet extends HttpServlet {
+    HashMap<String,Mapping> mappingUrls;
+
+    // public FrontServlet(HashMap<String,Mapping> mappingUrls){
+    //     this.mappingUrls=mappingUrls;
+    // }
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
