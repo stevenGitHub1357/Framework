@@ -5,6 +5,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 
-public @interface AnnotationTesterUrl {
+public @interface AnnotationUrl {
     String url() default "/";
 }
