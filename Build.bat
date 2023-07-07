@@ -1,11 +1,11 @@
 javac -d . *.java
 mkdir .\Framework\WEB-INF\classes\
 mkdir .\Framework\WEB-INF\lib\
-mkdir .\Framework\Pages\
+mkdir .\Framework\pages\
 mkdir .\Framework\WEB-INF\src\
 
 robocopy .\Test-Framework\src  .\Framework\WEB-INF\classes /S /E *.class
-copy .\Test-Framework\View\  .\Framework\Pages\ 
+copy .\Test-Framework\view\  .\Framework\pages\ 
 copy .\Test-Framework\src\  .\Framework\WEB-INF\src\
 copy .\Test-Framework\ .\Framework\WEB-INF\
 

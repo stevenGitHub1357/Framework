@@ -5,42 +5,28 @@
  */
 package etu1889.framework.servlet;
 
-import etu1889.framework.*;
-
-import modele.*;
-
+import etu1889.framework.Mapping;
+import etu1889.framework.ModelView;
+import etu1889.framework.Utilitaire;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.lang.reflect.*;
 import java.util.HashMap;
-import java.io.File;
-import java.lang.reflect.Method;
-import java.lang.Class;
-import java.lang.*;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Date;
 
-// import javax.servlet.ServletException;
-// import javax.servlet.http.HttpServlet;
-// import javax.servlet.http.HttpServletRequest;
-// import javax.servlet.http.HttpServletResponse;
-
-import jakarta.servlet.*;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.util.HashMap;
 /**
  *
- * @author steve
+ * @author ITU
  */
 public class FrontServlet extends HttpServlet {
-
-    ArrayList<Mapping> allMapping ;
     HashMap<String,Mapping> mappingUrls;
     
-    
-
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -50,64 +36,126 @@ public class FrontServlet extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException{
-                
-            String[] endOfUrl = request.getRequestURI().toString().split("/");
-            String url = endOfUrl[endOfUrl.length-1] ;
 
-            try {
-                String classesDir = FrontServlet.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-                // classesDir = "/D:/ITU/Donnees_logiciels/apache-tomcat-10.0.22/webapps/Framework/WEB-INF/classes/";
-                System.out.println("classes : "+classesDir);
-                System.out.println("url : "+url);
-                String view = new Utilitaire().getView("emp-add",classesDir);
-                System.out.println(view);   
+    public String setterName(String attr) {
+        return "set" + attr.substring(0, 1).toUpperCase() + attr.substring(1);
+    }
 
-                try (PrintWriter out = response.getWriter()) {
-                    out.println("<!DOCTYPE html>");
-                    out.println("<html>");
-                    out.println("<head>");
-                    out.println("<title>Erreur</title>");            
-                    out.println("</head>");
-                    out.println("<body>");
-                    out.println("<h5>classes :"+classesDir+"</h5>");
-                    out.println("<h5>url : "+url+"</h5>");
-                    out.println("<h5>view : "+view+"</h5>");
-                    out.println("</body>");
-                    out.println("</html>");
-                }
+    public void callSetter(Method theSetter, Object objectInst, Object objectVal) {
+        try {
+            if (objectVal instanceof Integer) {
+                //int intValue = (int) objectVal; // cast to int
+                theSetter.invoke(objectInst, (int) objectVal);
+            } else if (objectVal instanceof Double) {
+                //double doubleValue = (double) objectVal; // cast to double
+                theSetter.invoke(objectInst, (double) objectVal);
+            } else if (objectVal instanceof Date) {
+                //Date dateValue = (Date) objectVal; // cast to Date
+                theSetter.invoke(objectInst, (Date) objectVal);
+            } else {
+                //String stringValue = (String) objectVal; // cast to String
+                theSetter.invoke(objectInst, (String) objectVal);
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        } 
+    }
 
-                // String absolut = this.getClass().getClassLoader().getResource("").getPath().toString();
-                // String[] classesDir = absolut.split("/WEB-INF/classes/");
-                // System.out.println("url : "+url);
-                // System.out.println("Absolut : "+absolut);
-                // System.out.println("classes : "+classesDir[classesDir.length-1]);
-                
-                // String view = new Utilitaire().getView(url,absolut);
-                // System.out.println(view);   
-            }  catch (Exception e) {
-                // TODO: handle exception
-                e.printStackTrace();
-                try (PrintWriter out = response.getWriter()) {
-                    out.println("<!DOCTYPE html>");
-                    out.println("<html>");
-                    out.println("<head>");
-                    out.println("<title>Erreur</title>");            
-                    out.println("</head>");
-                    out.println("<body>");
-                    out.println("<h5>Error</h5>");
-                    out.println("</body>");
-                    out.println("</html>");
+    public void fillAttribute(HttpServletRequest request, Object objectInst) {
+        try {
+            Field[] attributs = objectInst.getClass().getDeclaredFields();
+            for(Field field : attributs) {
+                String value = request.getParameter(field.getName());
+                if(value != null) {
+                    Method setter = objectInst.getClass().getMethod(setterName(field.getName()), field.getType());
+                    Object attr = new Utilitaire().castToAppropriateClass(value, field.getType());
+                    //setter.invoke(objectInst, value);
+                    callSetter(setter, objectInst, attr);
+
+                    System.out.println(field.getName() + ": " + value);
+                    System.out.println("we will call --> " + setterName(field.getName()));
                 }
             }
-            
-            // System.out.println("View: "+ mView.getView());
-            // response.sendRedirect("Framework/"+mView.getView());
-            // RequestDispatcher dispatch = request.getRequestDispatcher("Index.jsp");
+        } catch (Exception e) {
+            e.printStackTrace();
+      }
     }
-        
+
+    public Class<?>[] getParameterType(Method[] methods, String methodeName) {
+        for (Method method : methods) {
+            if(method.getName() == methodeName) {
+                return method.getParameterTypes();
+            }
+        }
+
+        return null;
+    }
+
+    public Object[] getParameterValues(HttpServletRequest request, Parameter[] args) {
+        Object[] valueArgs = new Object[args.length];
+
+        for (int i=0; i<args.length; i++) {
+            System.out.println(">>> Attribut : " + args[i].getName());
+            valueArgs[i] = new Utilitaire().castToAppropriateClass(request.getParameter(args[i].getName()), args[i].getType());
+        }
+
+        return valueArgs;
+    }
+
+    /**
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws IOException
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+           throws ServletException, IOException {
+          try {
+                String[] url = new Utilitaire().getDataFromURL(request.getRequestURI());
+                String slug = url[url.length - 1];
+                RequestDispatcher dispatcher = request.getRequestDispatcher("/pages/index.html");
+                if(this.mappingUrls.containsKey(slug)) {
+
+                    System.out.println("url : " + slug);
+
+                    Mapping relative = mappingUrls.get(slug);
+
+                    Class<?> classInstance = Class.forName(relative.getClassName());
+                    Object objectInstance = classInstance.newInstance();
+                    fillAttribute(request, objectInstance);
+                    
+                    Class<?>[] functionParameters = getParameterType(classInstance.getDeclaredMethods(), relative.getMethode());
+                    Method function = objectInstance.getClass().getMethod(relative.getMethode(), functionParameters);
+                    Parameter[] args = function.getParameters();
+                    Object[] valueArgs = getParameterValues(request, args);
+
+                    System.out.println("*** Nb de parametre: " + args.length);
+
+                    ModelView view = (ModelView) function.invoke(objectInstance, valueArgs);
+                    dispatcher = request.getRequestDispatcher("/pages/" + view.getView());
+
+                       System.out.println("countData : " + view.getData().size());
+                       System.out.println("modelView : " + view.getView());
+
+                    for(HashMap.Entry<String, Object> entry : view.getData().entrySet()) {
+                        request.setAttribute(entry.getKey(), entry.getValue());
+                        System.out.println("key : " + entry.getKey() + "\t value: " + entry.getValue());
+                    }
+               }
+               dispatcher.forward(request, response);
+        } catch (Exception e) {
+              System.out.println("Tsy itany ilay page");
+              e.printStackTrace();
+        }
+           
+//        response.setContentType("text/html;charset=UTF-8");
+    }
     
+    @Override
+    public  void init() {
+        this.mappingUrls = new HashMap<String, Mapping>();
+        new Utilitaire().fillMappingUrlValues(this.mappingUrls);
+     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
@@ -120,9 +168,8 @@ public class FrontServlet extends HttpServlet {
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException{
-            processRequest(request, response);
-                
+            throws ServletException, IOException {
+        processRequest(request, response);
     }
 
     /**
@@ -136,7 +183,7 @@ public class FrontServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-            processRequest(request, response);         
+        processRequest(request, response);
     }
 
     /**
